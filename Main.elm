@@ -1,52 +1,55 @@
 import Html exposing (..)
 import Html.App as Html
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick, on, targetValue)
 
-import Html.Events exposing (onClick)
+import Json.Decode as Json
+import String
 
 main =
   Html.program
     { init = init
     , view = view
     , update = update
-    , subscriptions = subscriptions
+    , subscriptions = always Sub.none
     }
 
 -- model
-type alias Host = {
-  name : String,
-  cost : Int
-}
 type alias Model =
   { email : String
-  , hosting : Host
+  , hosting : Int
   , period :  Int
-  , interventionDays : Int
+  , days : Int
   , total : Int
   }
 
 init : (Model, Cmd Msg)
 init =
-  (Model "" {name="Saas", cost=105} 0 0 0, Cmd.none)
+  (Model "" 105 0 0 0, Cmd.none)
 
 -- update
-type Msg = Submit | Calculate
-
-calculate : Model -> Int
-calculate model =
-  model.period * 10 -- test
+type Msg
+  = Submit
+  | HostingChanged Int
+  | PeriodChanged Int
+  | DaysChanged Int
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update action model =
   case action of
     Submit ->
-      ({model | total = calculate model}, Cmd.none)
+      ({model | total = 10}, Cmd.none)
+    HostingChanged hosting ->
+        ({ model | hosting = hosting }, Cmd.none)
+    PeriodChanged period ->
+      ({ model | period = period }, Cmd.none)
+    DaysChanged days ->
+      ({ model | days = days }, Cmd.none)
 
 -- SUBSCRIPTIONS
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Sub.none
-
+calculateCost : Model -> Int
+calculateCost m =
+  (m.period * m.hosting) + (m.days * 691 * m.period)
 
 -- view
 hostOption host =
@@ -55,17 +58,24 @@ hostOption host =
 durationOption duration =
   option [value (toString duration) ] [ text (toString duration)]
 
+targetValueIntDecoder : Json.Decoder Int
+targetValueIntDecoder =
+  targetValue `Json.andThen` \val ->
+    case String.toInt val of
+      Ok i -> Json.succeed i
+      Err err -> Json.fail err
+
 view : Model -> Html Msg
 view model =
-  Html.div []
+  Html.form []
     [ h2 [] [ text "Estimez votre projet"]
-    , input [ placeholder "my@email.com" ] []
-    , select []
+    , label[][input [ placeholder "my@email.com" ] []]
+    , select [ on "change" (Json.map HostingChanged targetValueIntDecoder) ]
       (List.map hostOption [{name="Saas", cost=105}, {name="Dédié", cost=536}, {name="Critique", cost=1072}])
-    , select []
+    , select [ on "change" (Json.map PeriodChanged targetValueIntDecoder) ]
       (List.map durationOption [0..12])
-    , select []
+    , select [ on "change" (Json.map DaysChanged targetValueIntDecoder) ]
       (List.map durationOption [0..31])
-    , Html.span [][text (toString model.total)]
+    , Html.span [][text (toString <| calculateCost model)]
     , button [ onClick Submit ] [text "Send to Anybox"]
     ]
