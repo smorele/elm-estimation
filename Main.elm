@@ -67,15 +67,33 @@ targetValueIntDecoder =
 
 view : Model -> Html Msg
 view model =
-  Html.form []
-    [ h2 [] [ text "Estimez votre projet"]
-    , label[][input [ placeholder "my@email.com" ] []]
-    , select [ on "change" (Json.map HostingChanged targetValueIntDecoder) ]
+  Html.form [] [
+    h2 [] [
+      text "Estimez votre projet"
+    ],
+    div [] [
+      label[ for "email" ][ text "Email: " ],
+      input [ id "email", placeholder "my@email.com" ] []
+    ],
+    div [] [
+      label [ for "hosting" ][ text "Hebergement: " ],
+      select [ id "hosting", on "change" (Json.map HostingChanged targetValueIntDecoder)]
       (List.map hostOption [{name="Saas", cost=105}, {name="Dédié", cost=536}, {name="Critique", cost=1072}])
-    , select [ on "change" (Json.map PeriodChanged targetValueIntDecoder) ]
-      (List.map durationOption [0..12])
-    , select [ on "change" (Json.map DaysChanged targetValueIntDecoder) ]
-      (List.map durationOption [0..31])
-    , Html.span [][text (toString <| calculateCost model)]
-    , button [ onClick Submit ] [text "Send to Anybox"]
-    ]
+    ],
+    div [] [
+      label [ for "months" ][ text "Pendant: " ],
+      select [ id "months", on "change" (Json.map PeriodChanged targetValueIntDecoder) ]
+      (List.map durationOption [0..12]), -- options
+      span [][ text " mois"]
+    ],
+    div [] [
+      label [ for "help" ][ text "Je pense avoir besoin d'être accompagné: " ],
+      select [ id "help", on "change" (Json.map DaysChanged targetValueIntDecoder) ]
+      (List.map durationOption [0..31]), -- options
+      span [][ text " jours par mois"]
+    ],
+    div [] [
+      Html.span [][ text ("Total: " ++ (toString <| calculateCost model) ++ " euros (€)/mois")]
+    ],
+    button [ onClick Submit ] [text "Send to Anybox"]
+  ]
